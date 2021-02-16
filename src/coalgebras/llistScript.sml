@@ -1683,6 +1683,51 @@ Proof
   metis_tac[]
 QED
 
+Theorem LFILTER_LFILTER[simp]:
+  !P ll. LFILTER P (LFILTER P ll) = LFILTER P ll
+Proof
+  rpt strip_tac
+  >> ONCE_REWRITE_TAC[LLIST_BISIMULATION0]
+  >> rename[`LFILTER P`]
+  >> qexists_tac `λx y. every P x /\ every P y /\ x = LFILTER P y`
+  >> rw[every_LFILTER]
+  >> rename[`LFILTER P ll`]
+  >> assume_tac $ ISPEC ``ll: 'a llist`` llist_CASES
+  >> fs[] >> full_case_tac
+  >- fs[every_def,Once exists_cases] >> fs[]
+QED
+
+Theorem LFINITE_LFILTER:
+  !P ll. LFINITE ll ==> LFINITE (LFILTER P ll)
+Proof
+  gen_tac >> ho_match_mp_tac LFINITE_ind >> rw[]
+QED
+
+Theorem LLENGTH_LFILTER_LESS_EQ:
+  !P ll. LFINITE ll ==> THE(LLENGTH (LFILTER P ll)) <= THE (LLENGTH ll)
+Proof
+  `!P ll. LFINITE ll ==> IS_SOME (LLENGTH ll) ==> THE(LLENGTH (LFILTER P ll)) <= THE (LLENGTH ll)` by (
+    gen_tac >> ho_match_mp_tac LFINITE_ind
+    >> rw[IS_SOME_EXISTS]
+    >> imp_res_tac $ cj 2 $ REWRITE_RULE[EQ_IMP_THM] LFINITE_LLENGTH
+    >> rename[`LFILTER P ll`]
+    >> dxrule_then (qspec_then `P` assume_tac) LFINITE_LFILTER
+    >> gvs[LFINITE_LLENGTH]
+  )
+  >> rpt strip_tac
+  >> first_x_assum $ drule_then irule
+  >> fs[LFINITE_LLENGTH]
+QED
+
+Theorem every_F[simp]:
+  !ll. every (λx. F) ll <=> ll = [||]
+Proof
+  gen_tac
+  >> rename[`every _ ll`]
+  >> assume_tac $ ISPEC ``ll: 'a llist`` llist_CASES
+  >> rw[EQ_IMP_THM] >> fs[]
+QED
+
 Theorem every_LAPPEND1:
   !P ll1 ll2. every P (LAPPEND ll1 ll2) ==> every P ll1
 Proof
@@ -2124,6 +2169,15 @@ val LNTH_NONE_MONO = Q.store_thm ("LNTH_NONE_MONO",
   imp_res_tac LTAKE_LENGTH >>
   `~(m < z)` by metis_tac[LTAKE_LNTH_EL,optionTheory.NOT_SOME_NONE] >>
   rw[] >> decide_tac);
+
+Theorem LNTH_IS_SOME_MONO:
+  !m n l. IS_SOME (LNTH m l) /\ n <= m ==> IS_SOME (LNTH n l)
+Proof
+  rw[NOT_IS_SOME_EQ_NONE,quantHeuristicsTheory.IS_SOME_EQ_NOT_NONE]
+  >> drule_at Concl LNTH_NONE_MONO
+  >> rw[Once MONO_NOT_EQ]
+  >> rpt $ goal_assum $ drule
+QED
 
 (* ------------------------------------------------------------------------ *)
 (* Turning a stream-like linear order into a lazy list                      *)
