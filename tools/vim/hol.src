@@ -17,6 +17,45 @@ setlocal nobuflisted
 setlocal noswapfile
 let s:holnr = bufnr("")
 hide
+" define vimhol sign
+if has('signs')
+  sign define vimhol text=>
+  "texthl=Search
+endif
+
+" Counter of number of signs
+let s:cnt=0
+fu! SignAdd()
+  if has('signs')
+    let s:cnt+=1
+    call sign_place(s:cnt,s:holpipe,'vimhol', bufnr(''), {'lnum': line('.')})
+  endif
+endf
+
+fu! SignRemove(...)
+  if has('signs')
+    " line number given
+    if a:0 ># 0
+      let l:dct = get(filter(sign_getplaced(), 'get(v:val,"bufnr")=='.bufnr('')),'signs')
+      if l:dct is v:t_dict
+        let l:lst = get(l:dct, 'signs')
+      else
+        return
+      endif
+      let l:line=a:1
+      for h in l:lst
+        " remove all signs later in the buffer
+        if get(h,'lnum') ># l:line
+          call sign_unplace(s:holpipe,{id: get(h,'id'), buffer: bufnr('')})
+        endif
+      endfor
+    else
+      " remove all signs of current file
+      call sign_unplace(s:holpipe)
+    endif
+  endif
+endf
+
 
 let s:tmpprefix =
 fu! TempName()
@@ -228,12 +267,12 @@ nm <silent><expr> <LocalLeader>S "V".maplocalleader."S"
 nm <silent><expr> <LocalLeader>F "V".maplocalleader."F"
 nm <silent><expr> <LocalLeader>P "V".maplocalleader."P"
 nn <silent> <LocalLeader>R :<C-U>call HOLRotate()<CR>
-nn <silent> <LocalLeader>b :<C-U>call HOLRepeat("proofManagerLib.backup();")<CR>
-nn <silent> <LocalLeader>B :<C-U>call HOLRepeat("proofManagerLib.restore();")<CR>
-nn <silent> <LocalLeader>v :call HOLCall(function("HOLF"),["proofManagerLib.save()"])<CR>
-nn <silent> <LocalLeader>d :<C-U>call HOLRepeat("proofManagerLib.drop();")<CR>
+nn <silent> <LocalLeader>b :<C-U>call HOLRepeat("proofManagerLib.backup();")<CR>:call SignRemove(line('.'))<CR>
+nn <silent> <LocalLeader>B :<C-U>call HOLRepeat("proofManagerLib.restore();")<CR>:call SignRemove(line('.'))<CR>
+nn <silent> <LocalLeader>v :call HOLCall(function("HOLF"),["proofManagerLib.save()"])<CR>:call SignAdd()<CR>
+nn <silent> <LocalLeader>d :<C-U>call HOLRepeat("proofManagerLib.drop();")<CR>:call SignRemove()<CR>
 nn <silent> <LocalLeader>p :call HOLCall(function("HOLF"),["proofManagerLib.p()"])<CR>
-nn <silent> <LocalLeader>r :call HOLCall(function("HOLF"),["proofManagerLib.restart()"])<CR>
+nn <silent> <LocalLeader>r :call HOLCall(function("HOLF"),["proofManagerLib.restart()"])<CR>:call SignRemove()<CR>
 nn <silent> <LocalLeader>c :call HOLINT()<CR>
 nn <silent> <LocalLeader>t :call HOLSelect('`\\|‘','`\\|’')<CR>
 nn <silent> <LocalLeader>T :call HOLSelect('``\\|“','``\\|”')<CR>
